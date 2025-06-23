@@ -1,0 +1,10 @@
+{
+  "name": "qBittorrent Tasks",
+  "render_readme": true,
+  "domain": "qbittorrent_tasks",
+  "documentation": "https://github.com/yourusername/ha-qbittorrent-tasks",
+  "issue_tracker": "https://github.com/yourusername/ha-qbittorrent-tasks/issues",
+  "dependencies": [],
+  "iot_class": "Local Polling",
+  "homeassistant": "2023.8.0"
+}

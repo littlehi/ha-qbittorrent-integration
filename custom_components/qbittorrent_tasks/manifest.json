@@ -1,0 +1,11 @@
+{
+  "domain": "qbittorrent_tasks",
+  "name": "qBittorrent Tasks",
+  "documentation": "https://github.com/yourusername/ha-qbittorrent-tasks",
+  "dependencies": [],
+  "codeowners": ["@yourusername"],
+  "requirements": ["qbittorrent-api>=2023.3.44"],
+  "iot_class": "local_polling",
+  "version": "1.0.0",
+  "config_flow": true
+}
