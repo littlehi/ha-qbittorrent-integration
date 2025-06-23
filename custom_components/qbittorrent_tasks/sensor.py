@@ -18,17 +18,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
 )
 
-from .const import (
-    ATTR_DOWNLOADED,
-    ATTR_ETA,
-    ATTR_PROGRESS,
-    ATTR_RATIO,
-    ATTR_SIZE,
-    ATTR_SPEED_DOWN,
-    ATTR_SPEED_UP,
-    ATTR_STATE,
-    DOMAIN,
-)
+from .const import DOMAIN
 from .coordinator import QBittorrentDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,36 +40,19 @@ async def async_setup_entry(
         config_entry.entry_id
     ]
 
-    @callback
-    def _create_entities():
-        entities = []
-        for torrent_hash, torrent_data in coordinator.data.items():
-            entities.append(
-                QBittorrentTorrentSensor(
-                    coordinator=coordinator,
-                    torrent_hash=torrent_hash,
-                )
-            )
-        return entities
-
-    coordinator.async_add_listener(_create_entities)
-    async_add_entities(_create_entities())
+    async_add_entities([QBittorrentSensor(coordinator)])
 
 
-class QBittorrentTorrentSensor(
+class QBittorrentSensor(
     CoordinatorEntity[QBittorrentDataUpdateCoordinator], SensorEntity
 ):
-    """Representation of a qBittorrent torrent sensor."""
+    """Representation of qBittorrent tasks sensor."""
 
-    def __init__(
-        self,
-        coordinator: QBittorrentDataUpdateCoordinator,
-        torrent_hash: str,
-    ) -> None:
+    def __init__(self, coordinator: QBittorrentDataUpdateCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self._torrent_hash = torrent_hash
-        self._attr_unique_id = f"{DOMAIN}_{torrent_hash}"
+        self._attr_unique_id = f"{DOMAIN}_tasks"
+        self._attr_name = "qBittorrent Tasks"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.config_entry.entry_id)},
             name="qBittorrent",
@@ -87,26 +60,25 @@ class QBittorrentTorrentSensor(
         )
 
     @property
-    def name(self) -> str:
-        """Return the name of the sensor."""
-        return self.coordinator.data[self._torrent_hash]["name"]
-
-    @property
     def native_value(self) -> StateType:
-        """Return the state of the sensor."""
-        return f"{self.coordinator.data[self._torrent_hash]['progress']}%"
+        """Return the number of active torrents."""
+        return len(self.coordinator.data)
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Return the state attributes of the sensor."""
-        data = self.coordinator.data[self._torrent_hash]
-        return {
-            ATTR_PROGRESS: data["progress"],
-            ATTR_STATE: data["state"],
-            ATTR_DOWNLOADED: data["downloaded"],
-            ATTR_SIZE: data["size"],
-            ATTR_SPEED_DOWN: data["download_speed"],
-            ATTR_SPEED_UP: data["upload_speed"],
-            ATTR_RATIO: data["ratio"],
-            ATTR_ETA: data["eta"],
-        }
+        """Return the state attributes with all torrents info."""
+        if not self.coordinator.data:
+            return {"torrents": []}
+        
+        torrents = []
+        for torrent_hash, data in self.coordinator.data.items():
+            torrents.append({
+                "hash": torrent_hash,
+                "name": data["name"],
+                "progress": data["progress"],
+                "state": data["state"],
+                "download_speed": data["download_speed"],
+                "upload_speed": data["upload_speed"],
+            })
+        
+        return {"torrents": torrents}

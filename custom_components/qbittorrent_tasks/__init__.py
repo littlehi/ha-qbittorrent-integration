@@ -1,6 +1,7 @@
 """The qBittorrent Tasks integration."""
 import asyncio
 import logging
+import os
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -13,9 +14,11 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.components.http import StaticPathConfig
 
 from .const import DOMAIN
 from .coordinator import QBittorrentDataUpdateCoordinator
+from .frontend import async_setup_frontend
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
@@ -32,6 +35,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
+
+    # Setup frontend resources
+    await async_setup_frontend(hass)
+    
+    # Register static path for card
+    hass.http.register_static_path(
+        f"/{DOMAIN}",
+        os.path.join(os.path.dirname(__file__), "www"),
+        cache_headers=False,
+    )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
