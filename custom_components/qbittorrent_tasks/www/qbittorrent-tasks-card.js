@@ -4,11 +4,20 @@ class QBittorrentTasksCard extends HTMLElement {
       throw new Error('You need to define an entity');
     }
     this.config = config;
+    this._lastUpdate = null;
+    this._expanded = false;
   }
 
   set hass(hass) {
     this._hass = hass;
-    this.render();
+    const entity = hass.states[this.config.entity];
+    if (!entity) return;
+    
+    const currentUpdate = entity.last_updated;
+    if (this._lastUpdate !== currentUpdate) {
+      this._lastUpdate = currentUpdate;
+      this.render();
+    }
   }
 
   render() {
@@ -21,100 +30,143 @@ class QBittorrentTasksCard extends HTMLElement {
     const torrents = entity.attributes.torrents || [];
     const taskCount = entity.state;
 
-    this.innerHTML = `
-      <ha-card>
-        <div class="card-header">
-          <div class="name">qBittorrent Tasks</div>
-          <div class="count">${taskCount} active</div>
-        </div>
-        <div class="card-content">
-          ${torrents.length === 0 ? 
-            '<div class="no-tasks">No active tasks</div>' :
-            torrents.map(torrent => `
-              <div class="task-item">
-                <div class="task-name">${torrent.name}</div>
-                <div class="task-info">
-                  <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${torrent.progress}%"></div>
-                    <span class="progress-text">${torrent.progress}%</span>
-                  </div>
-                  <div class="task-details">
-                    <span class="state ${torrent.state}">${torrent.state}</span>
-                    <span class="speed">↓ ${this.formatSpeed(torrent.download_speed)} ↑ ${this.formatSpeed(torrent.upload_speed)}</span>
-                  </div>
-                </div>
-              </div>
-            `).join('')
+    if (!this._card) {
+      this.innerHTML = `
+        <ha-card>
+          <div class="card-header">
+            <div class="name">qBittorrent Tasks</div>
+            <div class="count"></div>
+          </div>
+          <div class="card-content"></div>
+          <div class="expand-button" style="display: none;"></div>
+        </ha-card>
+        <style>
+          .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--divider-color);
           }
+          .name { font-weight: bold; font-size: 14px; }
+          .count { color: var(--secondary-text-color); font-size: 12px; }
+          .no-tasks {
+            text-align: center;
+            color: var(--secondary-text-color);
+            padding: 16px;
+            font-size: 13px;
+          }
+          .task-item {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--divider-color);
+          }
+          .task-item:last-child { border-bottom: none; }
+          .task-name {
+            font-weight: 500;
+            font-size: 13px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .progress-bar {
+            position: relative;
+            height: 16px;
+            background: var(--disabled-color);
+            border-radius: 8px;
+            margin-bottom: 4px;
+          }
+          .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+          }
+          .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+          }
+          .task-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+          }
+          .state {
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: capitalize;
+            font-size: 10px;
+          }
+          .state.downloading { background: var(--success-color); color: white; }
+          .state.uploading { background: var(--info-color); color: white; }
+          .state.completed { background: var(--primary-color); color: white; }
+          .state.paused { background: var(--warning-color); color: white; }
+          .speed { color: var(--secondary-text-color); }
+          .expand-button {
+            text-align: center;
+            padding: 8px;
+            border-top: 1px solid var(--divider-color);
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: 12px;
+            background: var(--card-background-color);
+          }
+          .expand-button:hover {
+            background: var(--secondary-background-color);
+          }
+        </style>
+      `;
+      this._card = this.querySelector('ha-card');
+    }
+    
+    // Update content without rebuilding DOM
+    const countEl = this.querySelector('.count');
+    const contentEl = this.querySelector('.card-content');
+    const expandEl = this.querySelector('.expand-button');
+    
+    countEl.textContent = `${taskCount} active`;
+    
+    if (torrents.length === 0) {
+      contentEl.innerHTML = '<div class="no-tasks">No active tasks</div>';
+      expandEl.style.display = 'none';
+    } else {
+      const displayTorrents = this._expanded ? torrents : torrents.slice(0, 10);
+      
+      contentEl.innerHTML = displayTorrents.map(torrent => `
+        <div class="task-item">
+          <div class="task-name">${torrent.name}</div>
+          <div class="task-info">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${torrent.progress}%"></div>
+              <span class="progress-text">${torrent.progress}%</span>
+            </div>
+            <div class="task-details">
+              <span class="state ${torrent.state}">${torrent.state}</span>
+              <span class="speed">↓ ${this.formatSpeed(torrent.download_speed)} ↑ ${this.formatSpeed(torrent.upload_speed)}</span>
+            </div>
+          </div>
         </div>
-      </ha-card>
-      <style>
-        .card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px;
-          border-bottom: 1px solid var(--divider-color);
-        }
-        .name { font-weight: bold; }
-        .count { color: var(--secondary-text-color); }
-        .no-tasks {
-          text-align: center;
-          color: var(--secondary-text-color);
-          padding: 20px;
-        }
-        .task-item {
-          padding: 12px 16px;
-          border-bottom: 1px solid var(--divider-color);
-        }
-        .task-item:last-child { border-bottom: none; }
-        .task-name {
-          font-weight: 500;
-          margin-bottom: 8px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .progress-bar {
-          position: relative;
-          height: 20px;
-          background: var(--disabled-color);
-          border-radius: 10px;
-          margin-bottom: 8px;
-        }
-        .progress-fill {
-          height: 100%;
-          background: var(--primary-color);
-          border-radius: 10px;
-          transition: width 0.3s ease;
-        }
-        .progress-text {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 12px;
-          font-weight: bold;
-          color: white;
-          text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-        }
-        .task-details {
-          display: flex;
-          justify-content: space-between;
-          font-size: 12px;
-        }
-        .state {
-          padding: 2px 6px;
-          border-radius: 4px;
-          text-transform: capitalize;
-        }
-        .state.downloading { background: var(--success-color); color: white; }
-        .state.uploading { background: var(--info-color); color: white; }
-        .state.completed { background: var(--primary-color); color: white; }
-        .state.paused { background: var(--warning-color); color: white; }
-        .speed { color: var(--secondary-text-color); }
-      </style>
-    `;
+      `).join('');
+      
+      if (torrents.length > 10) {
+        expandEl.style.display = 'block';
+        expandEl.textContent = this._expanded ? 
+          `收起 (显示前10个)` : 
+          `展开显示全部 (${torrents.length}个任务)`;
+        expandEl.onclick = () => {
+          this._expanded = !this._expanded;
+          this.render();
+        };
+      } else {
+        expandEl.style.display = 'none';
+      }
+    }
   }
 
   formatSpeed(bytes) {
@@ -126,7 +178,7 @@ class QBittorrentTasksCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 3;
+    return 2;
   }
 }
 
