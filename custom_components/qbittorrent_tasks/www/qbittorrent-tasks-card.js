@@ -58,7 +58,7 @@ class QBittorrentTasksCard extends HTMLElement {
           }
           .task-item {
             display: grid;
-            grid-template-columns: 1fr 80px 60px 80px;
+            grid-template-columns: 2fr 80px 60px 80px;
             align-items: center;
             padding: 6px 16px;
             border-bottom: 1px solid var(--divider-color);
@@ -142,7 +142,7 @@ class QBittorrentTasksCard extends HTMLElement {
       
       contentEl.innerHTML = displayTorrents.map(torrent => `
         <div class="task-item">
-          <div class="task-name">${torrent.name}</div>
+          <div class="task-name">${this.cleanTaskName(torrent.name)}</div>
           <div class="task-progress-bar">
             <div class="progress-fill" style="width: ${torrent.progress}%"></div>
           </div>
@@ -164,6 +164,14 @@ class QBittorrentTasksCard extends HTMLElement {
         expandEl.style.display = 'none';
       }
     }
+  }
+
+  cleanTaskName(name) {
+    // Remove file extension
+    let cleaned = name.replace(/\.(torrent|zip|rar|7z)$/i, '');
+    // Remove prefix like [xxx.xx] or [xxx]
+    cleaned = cleaned.replace(/^\[[^\]]+\]/, '');
+    return cleaned.trim();
   }
 
   formatSpeed(bytes) {
