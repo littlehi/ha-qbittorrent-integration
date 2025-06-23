@@ -57,45 +57,45 @@ class QBittorrentTasksCard extends HTMLElement {
             font-size: 13px;
           }
           .task-item {
-            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            padding: 6px 16px;
             border-bottom: 1px solid var(--divider-color);
+            gap: 12px;
           }
           .task-item:last-child { border-bottom: none; }
           .task-name {
+            flex: 1;
             font-weight: 500;
-            font-size: 13px;
-            margin-bottom: 4px;
+            font-size: 12px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            min-width: 0;
           }
-          .progress-bar {
-            position: relative;
-            height: 16px;
+          .task-progress {
+            width: 80px;
+            height: 4px;
             background: var(--disabled-color);
-            border-radius: 8px;
-            margin-bottom: 4px;
+            border-radius: 2px;
+            position: relative;
           }
           .progress-fill {
             height: 100%;
             background: var(--primary-color);
-            border-radius: 8px;
+            border-radius: 2px;
             transition: width 0.3s ease;
           }
-          .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-          }
-          .task-details {
+          .task-info {
             display: flex;
-            justify-content: space-between;
-            font-size: 11px;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            flex-shrink: 0;
+          }
+          .progress-text {
+            font-weight: bold;
+            min-width: 35px;
           }
           .state {
             padding: 1px 4px;
@@ -141,15 +141,13 @@ class QBittorrentTasksCard extends HTMLElement {
       contentEl.innerHTML = displayTorrents.map(torrent => `
         <div class="task-item">
           <div class="task-name">${torrent.name}</div>
+          <div class="task-progress">
+            <div class="progress-fill" style="width: ${torrent.progress}%"></div>
+          </div>
           <div class="task-info">
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: ${torrent.progress}%"></div>
-              <span class="progress-text">${torrent.progress}%</span>
-            </div>
-            <div class="task-details">
-              <span class="state ${torrent.state}">${torrent.state}</span>
-              <span class="speed">↓ ${this.formatSpeed(torrent.download_speed)} ↑ ${this.formatSpeed(torrent.upload_speed)}</span>
-            </div>
+            <span class="progress-text">${torrent.progress}%</span>
+            <span class="state ${torrent.state}">${torrent.state}</span>
+            <span class="speed">↓${this.formatSpeed(torrent.download_speed)} ↑${this.formatSpeed(torrent.upload_speed)}</span>
           </div>
         </div>
       `).join('');
@@ -178,7 +176,7 @@ class QBittorrentTasksCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 2;
+    return 1;
   }
 }
 
