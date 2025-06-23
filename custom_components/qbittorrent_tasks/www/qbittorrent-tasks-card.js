@@ -57,7 +57,8 @@ class QBittorrentTasksCard extends HTMLElement {
             font-size: 13px;
           }
           .task-item {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 80px 60px 80px;
             align-items: center;
             padding: 6px 16px;
             border-bottom: 1px solid var(--divider-color);
@@ -65,7 +66,6 @@ class QBittorrentTasksCard extends HTMLElement {
           }
           .task-item:last-child { border-bottom: none; }
           .task-name {
-            flex: 1;
             font-weight: 500;
             font-size: 12px;
             overflow: hidden;
@@ -73,7 +73,7 @@ class QBittorrentTasksCard extends HTMLElement {
             white-space: nowrap;
             min-width: 0;
           }
-          .task-progress {
+          .task-progress-bar {
             width: 80px;
             height: 4px;
             background: var(--disabled-color);
@@ -86,16 +86,16 @@ class QBittorrentTasksCard extends HTMLElement {
             border-radius: 2px;
             transition: width 0.3s ease;
           }
-          .task-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 10px;
-            flex-shrink: 0;
-          }
-          .progress-text {
+          .task-progress {
+            text-align: right;
             font-weight: bold;
-            min-width: 35px;
+            font-size: 11px;
+            color: var(--primary-color);
+          }
+          .task-speed {
+            text-align: right;
+            font-size: 11px;
+            color: var(--secondary-text-color);
           }
           .state {
             padding: 1px 4px;
@@ -136,27 +136,26 @@ class QBittorrentTasksCard extends HTMLElement {
       contentEl.innerHTML = '<div class="no-tasks">No active tasks</div>';
       expandEl.style.display = 'none';
     } else {
-      const displayTorrents = this._expanded ? torrents : torrents.slice(0, 10);
+      // Sort by progress (ascending)
+      const sortedTorrents = [...torrents].sort((a, b) => a.progress - b.progress);
+      const displayTorrents = this._expanded ? sortedTorrents : sortedTorrents.slice(0, 10);
       
       contentEl.innerHTML = displayTorrents.map(torrent => `
         <div class="task-item">
           <div class="task-name">${torrent.name}</div>
-          <div class="task-progress">
+          <div class="task-progress-bar">
             <div class="progress-fill" style="width: ${torrent.progress}%"></div>
           </div>
-          <div class="task-info">
-            <span class="progress-text">${torrent.progress}%</span>
-            <span class="state ${torrent.state}">${torrent.state}</span>
-            <span class="speed">↓${this.formatSpeed(torrent.download_speed)} ↑${this.formatSpeed(torrent.upload_speed)}</span>
-          </div>
+          <div class="task-progress">${torrent.progress.toFixed(1)}%</div>
+          <div class="task-speed">${this.formatSpeed(torrent.download_speed)}</div>
         </div>
       `).join('');
       
-      if (torrents.length > 10) {
+      if (sortedTorrents.length > 10) {
         expandEl.style.display = 'block';
         expandEl.textContent = this._expanded ? 
           `收起 (显示前10个)` : 
-          `展开显示全部 (${torrents.length}个任务)`;
+          `展开显示全部 (${sortedTorrents.length}个任务)`;
         expandEl.onclick = () => {
           this._expanded = !this._expanded;
           this.render();
