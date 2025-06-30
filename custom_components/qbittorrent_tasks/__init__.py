@@ -36,15 +36,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    # Setup frontend resources
-    await async_setup_frontend(hass)
-    
-    # Register static path for card
+    # Register static path for card first
+    www_path = os.path.join(os.path.dirname(__file__), "www")
     hass.http.register_static_path(
         f"/{DOMAIN}",
-        os.path.join(os.path.dirname(__file__), "www"),
+        www_path,
         cache_headers=False,
     )
+    
+    # Setup frontend resources
+    await async_setup_frontend(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

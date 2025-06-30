@@ -187,11 +187,18 @@ class QBittorrentTasksCard extends HTMLElement {
   }
 }
 
-customElements.define('qbittorrent-tasks-card', QBittorrentTasksCard);
+// 确保在DOM加载完成后注册自定义元素
+if (!customElements.get('qbittorrent-tasks-card')) {
+  customElements.define('qbittorrent-tasks-card', QBittorrentTasksCard);
+  console.log('qBittorrent Tasks Card registered successfully');
+}
 
+// 注册到window.customCards
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'qbittorrent-tasks-card',
-  name: 'qBittorrent Tasks Card',
-  description: 'Display qBittorrent download tasks'
-});
+if (!window.customCards.find(card => card.type === 'qbittorrent-tasks-card')) {
+  window.customCards.push({
+    type: 'qbittorrent-tasks-card',
+    name: 'qBittorrent Tasks Card',
+    description: 'Display qBittorrent download tasks'
+  });
+}
