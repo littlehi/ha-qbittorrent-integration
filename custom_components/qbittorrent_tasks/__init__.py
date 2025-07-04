@@ -38,11 +38,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Register static path for card first
     www_path = os.path.join(os.path.dirname(__file__), "www")
-    hass.http.register_static_path(
-        f"/{DOMAIN}",
-        www_path,
-        cache_headers=False,
-    )
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(
+            f"/{DOMAIN}", 
+            www_path, 
+            cache_headers=False
+        )
+    ])
     
     # Setup frontend resources
     await async_setup_frontend(hass)
